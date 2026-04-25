@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Merge Sort Visualizer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin-top: 0;
+      color: #cfcfcf;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin: 16px 0 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+
+    button:hover:enabled {
+      opacity: 0.9;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    #generateBtn {
+      background: #ffffff;
+      color: #111;
+    }
+
+    #sortBtn {
+      background: #ff4d4d;
+      color: white;
+    }
+
+    #array-container {
+      width: min(1100px, 95vw);
+      height: 480px;
+      border: 2px solid #444;
+      background: #000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 2px;
+      padding: 10px;
+    }
+
+    .bar {
+      background: white;
+      width: calc((100% - 98px) / 50);
+      transition: height 0.15s linear, background 0.15s linear;
+    }
+
+    .bar.active {
+      background: red;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: #a9a9a9;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Merge Sort Visualizer</h1>
+  <p>Generates 50 rectangles with random heights and sorts them using merge sort.</p>
+
+  <div class="controls">
+    <button id="generateBtn">Generate New Rectangles</button>
+    <button id="sortBtn">Start Merge Sort</button>
+  </div>
+
+  <div id="array-container"></div>
+  <div class="footer-note">Red = rectangles currently being compared. White = all others.</div>
+
+  <script>
+    const BAR_COUNT = 50;
+    const MIN_HEIGHT = 20;
+    const MAX_HEIGHT = 440;
+    const DELAY = 60;
+
+    const container = document.getElementById('array-container');
+    const generateBtn = document.getElementById('generateBtn');
+    const sortBtn = document.getElementById('sortBtn');
+
+    let values = [];
+    let isSorting = false;
+
+    function randomHeight() {
+      return Math.floor(Math.random() * (MAX_HEIGHT - MIN_HEIGHT + 1)) + MIN_HEIGHT;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function generateArray() {
+      if (isSorting) return;
+
+      values = Array.from({ length: BAR_COUNT }, () => randomHeight());
+      renderBars();
+    }
+
+    function renderBars(activeIndices = []) {
+      container.innerHTML = '';
+
+      values.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        if (activeIndices.includes(index)) {
+          bar.classList.add('active');
+        }
+        bar.style.height = `${value}px`;
+        container.appendChild(bar);
+      });
+    }
+
+    async function mergeSort(start, end) {
+      if (start >= end) return;
+
+      const mid = Math.floor((start + end) / 2);
+      await mergeSort(start, mid);
+      await mergeSort(mid + 1, end);
+      await merge(start, mid, end);
+    }
+
+    async function merge(start, mid, end) {
+      const left = values.slice(start, mid + 1);
+      const right = values.slice(mid + 1, end + 1);
+
+      let i = 0;
+      let j = 0;
+      let k = start;
+
+      while (i < left.length && j < right.length) {
+        const leftIndex = start + i;
+        const rightIndex = mid + 1 + j;
+
+        renderBars([leftIndex, rightIndex]);
+        await sleep(DELAY);
+
+        if (left[i] <= right[j]) {
+          values[k] = left[i];
+          i++;
+        } else {
+          values[k] = right[j];
+          j++;
+        }
+
+        renderBars([k]);
+        await sleep(DELAY);
+        k++;
+      }
+
+      while (i < left.length) {
+        const leftIndex = start + i;
+        renderBars([leftIndex]);
+        await sleep(DELAY);
+
+        values[k] = left[i];
+        renderBars([k]);
+        await sleep(DELAY);
+
+        i++;
+        k++;
+      }
+
+      while (j < right.length) {
+        const rightIndex = mid + 1 + j;
+        renderBars([rightIndex]);
+        await sleep(DELAY);
+
+        values[k] = right[j];
+        renderBars([k]);
+        await sleep(DELAY);
+
+        j++;
+        k++;
+      }
+
+      renderBars();
+    }
+
+    async function startSort() {
+      if (isSorting) return;
+
+      isSorting = true;
+      generateBtn.disabled = true;
+      sortBtn.disabled = true;
+
+      await mergeSort(0, values.length - 1);
+      renderBars();
+
+      isSorting = false;
+      generateBtn.disabled = false;
+      sortBtn.disabled = false;
+    }
+
+    generateBtn.addEventListener('click', generateArray);
+    sortBtn.addEventListener('click', startSort);
+
+    generateArray();
+  </script>
+</body>
+</html>
