@@ -1,240 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Merge Sort Visualizer</title>
+  <title>Merge Sort</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      margin: 0;
-      min-height: 100vh;
-      background: #111;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px;
-    }
-
-    h1 {
-      margin-bottom: 8px;
-    }
-
-    p {
-      margin-top: 0;
-      color: #cfcfcf;
+      background-color: black;
+      color: white;
+      font-family: Arial;
       text-align: center;
     }
 
-    .controls {
-      display: flex;
-      gap: 12px;
-      margin: 16px 0 24px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    button {
-      border: none;
-      padding: 12px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: bold;
-    }
-
-    button:hover:enabled {
-      opacity: 0.9;
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
-    }
-
-    #generateBtn {
-      background: #ffffff;
-      color: #111;
-    }
-
-    #sortBtn {
-      background: #ff4d4d;
-      color: white;
-    }
-
-    #array-container {
-      width: min(1100px, 95vw);
-      height: 480px;
-      border: 2px solid #444;
-      background: #000;
+    #bars {
+      width: 1100px;
+      height: 450px;
+      border: 1px solid white;
+      margin: 20px auto;
       display: flex;
       align-items: flex-end;
-      justify-content: center;
       gap: 2px;
-      padding: 10px;
+      padding: 5px;
     }
 
     .bar {
-      background: white;
-      width: calc((100% - 98px) / 50);
-      transition: height 0.15s linear, background 0.15s linear;
+      background-color: white;
+      width: 20px;
     }
 
-    .bar.active {
-      background: red;
-    }
-
-    .footer-note {
-      margin-top: 14px;
-      color: #a9a9a9;
-      font-size: 0.95rem;
+    button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
   <h1>Merge Sort Visualizer</h1>
-  <p>Generates 50 rectangles with random heights and sorts them using merge sort.</p>
 
-  <div class="controls">
-    <button id="generateBtn">Generate New Rectangles</button>
-    <button id="sortBtn">Start Merge Sort</button>
-  </div>
+  <button onclick="makeBars()">Make Bars</button>
+  <button onclick="startMergeSort()">Merge Sort</button>
 
-  <div id="array-container"></div>
-  <div class="footer-note">Red = rectangles currently being compared. White = all others.</div>
+  <div id="bars"></div>
 
   <script>
-    const BAR_COUNT = 50;
-    const MIN_HEIGHT = 20;
-    const MAX_HEIGHT = 440;
-    const DELAY = 60;
+    let numbers = [];
+    let sorting = false;
 
-    const container = document.getElementById('array-container');
-    const generateBtn = document.getElementById('generateBtn');
-    const sortBtn = document.getElementById('sortBtn');
+    function makeBars() {
+      if (sorting) {
+        return;
+      }
 
-    let values = [];
-    let isSorting = false;
+      numbers = [];
 
-    function randomHeight() {
-      return Math.floor(Math.random() * (MAX_HEIGHT - MIN_HEIGHT + 1)) + MIN_HEIGHT;
+      for (let i = 0; i < 50; i++) {
+        let randomNum = Math.floor(Math.random() * 400) + 20;
+        numbers.push(randomNum);
+      }
+
+      drawBars();
+    }
+
+    function drawBars(redBars = []) {
+      let barsDiv = document.getElementById("bars");
+      barsDiv.innerHTML = "";
+
+      for (let i = 0; i < numbers.length; i++) {
+        let bar = document.createElement("div");
+        bar.className = "bar";
+        bar.style.height = numbers[i] + "px";
+
+        if (redBars.includes(i)) {
+          bar.style.backgroundColor = "red";
+        } else {
+          bar.style.backgroundColor = "white";
+        }
+
+        barsDiv.appendChild(bar);
+      }
     }
 
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    function generateArray() {
-      if (isSorting) return;
+    async function startMergeSort() {
+      if (sorting) {
+        return;
+      }
 
-      values = Array.from({ length: BAR_COUNT }, () => randomHeight());
-      renderBars();
+      sorting = true;
+      await mergeSort(0, numbers.length - 1);
+      drawBars();
+      sorting = false;
     }
 
-    function renderBars(activeIndices = []) {
-      container.innerHTML = '';
+    async function mergeSort(left, right) {
+      if (left >= right) {
+        return;
+      }
 
-      values.forEach((value, index) => {
-        const bar = document.createElement('div');
-        bar.className = 'bar';
-        if (activeIndices.includes(index)) {
-          bar.classList.add('active');
-        }
-        bar.style.height = `${value}px`;
-        container.appendChild(bar);
-      });
+      let middle = Math.floor((left + right) / 2);
+
+      await mergeSort(left, middle);
+      await mergeSort(middle + 1, right);
+      await merge(left, middle, right);
     }
 
-    async function mergeSort(start, end) {
-      if (start >= end) return;
+    async function merge(left, middle, right) {
+      let leftArray = [];
+      let rightArray = [];
 
-      const mid = Math.floor((start + end) / 2);
-      await mergeSort(start, mid);
-      await mergeSort(mid + 1, end);
-      await merge(start, mid, end);
-    }
+      for (let i = left; i <= middle; i++) {
+        leftArray.push(numbers[i]);
+      }
 
-    async function merge(start, mid, end) {
-      const left = values.slice(start, mid + 1);
-      const right = values.slice(mid + 1, end + 1);
+      for (let i = middle + 1; i <= right; i++) {
+        rightArray.push(numbers[i]);
+      }
 
       let i = 0;
       let j = 0;
-      let k = start;
+      let k = left;
 
-      while (i < left.length && j < right.length) {
-        const leftIndex = start + i;
-        const rightIndex = mid + 1 + j;
+      while (i < leftArray.length && j < rightArray.length) {
+        drawBars([left + i, middle + 1 + j]);
+        await sleep(70);
 
-        renderBars([leftIndex, rightIndex]);
-        await sleep(DELAY);
-
-        if (left[i] <= right[j]) {
-          values[k] = left[i];
+        if (leftArray[i] < rightArray[j]) {
+          numbers[k] = leftArray[i];
           i++;
         } else {
-          values[k] = right[j];
+          numbers[k] = rightArray[j];
           j++;
         }
 
-        renderBars([k]);
-        await sleep(DELAY);
+        drawBars([k]);
+        await sleep(70);
         k++;
       }
 
-      while (i < left.length) {
-        const leftIndex = start + i;
-        renderBars([leftIndex]);
-        await sleep(DELAY);
-
-        values[k] = left[i];
-        renderBars([k]);
-        await sleep(DELAY);
-
+      while (i < leftArray.length) {
+        drawBars([left + i]);
+        await sleep(70);
+        numbers[k] = leftArray[i];
         i++;
         k++;
+        drawBars([k - 1]);
+        await sleep(70);
       }
 
-      while (j < right.length) {
-        const rightIndex = mid + 1 + j;
-        renderBars([rightIndex]);
-        await sleep(DELAY);
-
-        values[k] = right[j];
-        renderBars([k]);
-        await sleep(DELAY);
-
+      while (j < rightArray.length) {
+        drawBars([middle + 1 + j]);
+        await sleep(70);
+        numbers[k] = rightArray[j];
         j++;
         k++;
+        drawBars([k - 1]);
+        await sleep(70);
       }
-
-      renderBars();
     }
 
-    async function startSort() {
-      if (isSorting) return;
-
-      isSorting = true;
-      generateBtn.disabled = true;
-      sortBtn.disabled = true;
-
-      await mergeSort(0, values.length - 1);
-      renderBars();
-
-      isSorting = false;
-      generateBtn.disabled = false;
-      sortBtn.disabled = false;
-    }
-
-    generateBtn.addEventListener('click', generateArray);
-    sortBtn.addEventListener('click', startSort);
-
-    generateArray();
+    makeBars();
   </script>
 </body>
 </html>
